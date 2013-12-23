@@ -36,6 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'DTest',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -80,3 +81,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Resources (Templates)
+TEMPLATE_DIRS = (os.path.join(BASE_DIR,'DTest/templates'),)
