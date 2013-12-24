@@ -1,0 +1,16 @@
+Pressing issues and concerns.
+
+Models -
+    + getTorrent should just return the referred to Torrent instance,
+                 or a list of Torrent instances; the other info can be inferred from that
+    + Client -
+        + Play with conversation, first. Create simple terminal torrent
+                 program to see how the client will/should "expect" the tracker to behave
+    + Torrent - 
+        + See Client
+
+Views -
+    + Front should display a list of active clients for debugging purposes
+    + handle_torrent needs some serious error checking
+    + Announce should check client existence and add lacking ones
+    + Scrape should allow multiple info-hashes, or none at all
