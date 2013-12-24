@@ -1,4 +1,5 @@
-
+import bencode
+import hashlib
 ####
 # torrent-protocol
 ########
@@ -46,7 +47,7 @@ class torUtils:
 		return temp
 
 
-	# Generic bdecoder.
+	# Generic bdecoder here
 
 #############################
 # Generic utility functions #
@@ -64,3 +65,18 @@ def getParams(url):
     for k in params.split("&"):
         d[k.split("=")[0]]=k.split("=")[1:]
     return d
+
+def getHash(file): # ex getHash(open("file.torrent").read())
+    """Return the info_hash for the particular torrent.
+       Should probably take a shot at adding error-checking
+       here."""
+    hash = bencode.bdecode(file)
+    print hash
+    hash = hashlib.sha1(bencode.bencode(hash['info'])).hexdigest()
+    return hash
+
+def getInfo(file,name):
+    return {"name":name,
+            "info_hash":getHash(file),
+            "size":1234,
+            }

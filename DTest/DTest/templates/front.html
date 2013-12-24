@@ -1,5 +1,12 @@
 Hello world!
 <br><br>
-{{ torrents }}
+<form action="." method="post" enctype="multipart/form-data">{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="Submit" />
+</form>
+<br><br>
+{% for torrent in torrents %}
+    <li>{{ torrent.name }} -- <a href="/scrape?info_hash={{ torrent.info_hash }}">{{ torrent.info_hash }}</a></li>
+{% endfor %}
 <br><br>
 
