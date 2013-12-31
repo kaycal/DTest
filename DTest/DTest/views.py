@@ -16,13 +16,13 @@ def front(request):
             try:
                 if handle_upload(request.FILES['torrent']):
                     return render_to_response('front.html',
-                                                           {'torrents':models.Torrent.objects.all(),'uploaded':True,'form':form},
-                                                           context_instance=RequestContext(request))
+                                             {'torrents':models.Torrent.objects.all(),'uploaded':True,'form':form},
+                                              context_instance=RequestContext(request))
             except Exception as e:
                 print e
     return render_to_response('front.html',
-                                           {'torrents':models.Torrent.objects.all(),'uploaded':False,'form':form},
-                                           context_instance=RequestContext(request))
+                             {'torrents':models.Torrent.objects.all(),'uploaded':False,'form':form},
+                             context_instance=RequestContext(request))
 
 def handle_upload(torrent):
     t = ""
@@ -39,8 +39,13 @@ def handle_upload(torrent):
 def announce(request):
     print torUtils.getParams(request.get_full_path())
     # Match info hash against a particular Torrent
+    # try:
+    #     tr = models.getTorrent(torUtils.getParams(request.get_full_path())['info_hash'][0])
+    #     
+    # except DoesNotExist:
+    #     print "Torrent not found."
+    #     return HttpResponse("Newp!")
     # Match client against list of known users
-    # If announce, take internal action; OH FUCK HERE IS AN ALGORITHM I MUST WRITE :(
     # -- Seeding:
     # -- Leeching:
     # -- Loading:
