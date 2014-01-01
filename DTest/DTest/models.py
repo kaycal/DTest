@@ -2,47 +2,56 @@ from django.db import models
 
 def getTorrent(hash):
     for t in Torrent.objects.all():
-        if hash == t.info_hash:
+        if hash.lower() == t.info_hash.lower():
             # d,k = **t # Check this!!!
             peers = {}
-            for p in t.peers.all(): # Django has a way of doing this funny, check inside
-                peers[p.__unicode__()] = p
             return {"name":t.name,
                     "info_hash":t.info_hash,
                     "size":t.size,
                     "peers":peers,
                     "torrent":t
                    }
-    return "Nope :("
+#    print "Suspected problem spot"
+    raise Exception("Torrent not found: - info_hash: {} - passedhash: {}".format(hash.encode('utf-8')
+                                                                                ,t.info_hash))
 
 
 
 class Client(models.Model):
-    name = models.CharField(max_length=20,unique=True)
+    name = models.CharField(max_length=20)
     ip = models.GenericIPAddressField()
     port = models.IntegerField()
 
     state_choices = (
-        ('SEEDING','Seeding'),
-        ('LEECHING','Leeching'),
-        ('LOADING','Initializing'),
-        ('INACTIVE','Inactive'),
+        ('seeding','Seeding'),
+        ('leeching','Leeching'),
+        ('started','Initializing'),
+        ('inactive','Inactive'),
     )
 
-    seeding = []
 
-    state = models.CharField(max_length=12,choices=state_choices, default='INACTIVE')
+
+    state = models.CharField(max_length=12,choices=state_choices, default='inactive')
 
     def __unicode__(self):
         return self.name
 
-    def getState(self):
-        return self.state
+    def setState(self, state):
+        options = {"seeding":self.__startSeeding__,
+                   "started":self.__initialize__,
+                   "inactive":self.__quit__
+                  }
+        self.state = options[state.lower()]()
+        
 
-    def getSeeds(self):
-        seeds = []
-        for s in seeding:
-            seeds.add(getTorrent(s)["torrent"])
+    def __startSeeding__(self):
+        return "Seeding"
+
+    def __initialize__(self):
+        return "Starting"
+
+    def __quit__(self):
+        return "Inactive"
             
 
 class Torrent(models.Model):
@@ -59,3 +68,32 @@ class Torrent(models.Model):
         for peer in self.peers.all():
             p[peer.name] = peer,(True if self in peer.getSeeds() else False)
         print p
+
+
+
+
+
+#############
+# Utility functions
+#############
+
+
+#############
+# Database read/write
+#############
+
+def handleClient(info=None,req=None,torrent=None):
+    try:
+        # Try to fetch client
+        c, created = Client.objects.get_or_create(name=info[u'peer_id'],
+                                                          ip=req.META["REMOTE_ADDR"],
+                                                          port=int(info[u'port'][0]),
+                                                          )
+        c.setState(info[u'event'][0])
+        # Later; check params for downloaded / left, try to use peers w/ less
+        # data remaining to pass to lacking peers, when seeders are unavailable
+        #
+        # Save client changes
+    except Exception as e:
+        print e, "<--Here?"
+    print "Probs not here."

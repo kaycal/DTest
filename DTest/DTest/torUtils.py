@@ -1,5 +1,7 @@
+import binascii
 import bencode
 import hashlib
+import urllib
 ####
 # torrent-protocol
 ########
@@ -71,12 +73,11 @@ def getHash(file): # ex getHash(open("file.torrent").read())
        Should probably take a shot at adding error-checking
        here."""
     hash = bencode.bdecode(file)
-    print hash
-    hash = hashlib.sha1(bencode.bencode(hash['info'])).hexdigest()
-    return hash
+    hash1 = hashlib.sha1(bencode.bencode(hash['info'])).hexdigest()
+    return binascii.a2b_hex(hash1)
 
 def getInfo(file,name):
     return {"name":name,
-            "info_hash":getHash(file),
+            "info_hash":urllib.quote(getHash(file)),
             "size":1234,
             }

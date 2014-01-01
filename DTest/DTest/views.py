@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.template import RequestContext
 from django.shortcuts import render_to_response,render
 from django.http import HttpResponseRedirect
+import django.db.utils
 from .forms import UploadTorrentForm
 import bencode
 import models
@@ -26,24 +27,32 @@ def front(request):
 
 def handle_upload(torrent):
     t = ""
-    if torrent.name.split(".")[1].lower() == "torrent":
+    if torrent.name.split(".")[-1].lower() == "torrent":
         t = ""
         for chunk in torrent.chunks():
             t = str.join(t,chunk)
-        tr = models.Torrent(**torUtils.getInfo(t,torrent.name.split(".")[0]))
-        tr.save()
+        try:
+            tr = models.Torrent(**torUtils.getInfo(t,torrent.name.split(".")[0]))
+            tr.save()
+        except Exception as e:
+            tr, created = models.Torrent.objects.get_or_create(**torUtils.getInfo(t,torrent.name.split(".")[0]))
+            tr.delete()
+            tr, created = models.Torrent.objects.get_or_create(**torUtils.getInfo(t,torrent.name.split(".")[0]))
+            tr.save()
         return True
+        
     else:
         raise Exception("Not a torrent file.")
 
 def announce(request):
-    print torUtils.getParams(request.get_full_path())
     # Match info hash against a particular Torrent
-    # try:
-    #     tr = models.getTorrent(torUtils.getParams(request.get_full_path())['info_hash'][0])
-    #     
-    # except DoesNotExist:
-    #     print "Torrent not found."
+    try:
+        params = torUtils.getParams(request.get_full_path())
+        info_hash = params[u'info_hash'][0]
+        tr = models.getTorrent(params[u'info_hash'][0]) # Suspected problem area
+        models.handleClient(info=params,req=request,torrent=tr)
+    except Exception as e:
+        print "Torrent not found; ", e
     #     return HttpResponse("Newp!")
     # Match client against list of known users
     # -- Seeding:
