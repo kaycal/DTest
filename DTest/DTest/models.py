@@ -14,11 +14,15 @@ class Torrent(models.Model):
     info_hash = models.CharField(max_length=20,unique=True)
     size = models.BigIntegerField()
     
-    def getPeer(name=None):
-        if name is not None:
-            return this.client_set.filter(client_name__startswith=name)
+    def getPeer(name=None, addr=None):
+        if name is not None: # Partial matching; TODO full searching
+            res = this.client_set.filter(client_name__startswith=name)
+        elif addr is not None:
+            res = this.client_set.filter(client_ip__exact=addr)
         else:
             return this.client_set.all()
+        print res
+        return res
 
     @classmethod
     def create(info_hash=None,name=None):
@@ -36,7 +40,7 @@ class Torrent(models.Model):
                         "size":t.size,
                         "torrent":t
                        }
-    #    print "Suspected problem spot"
+        # Throw a torrent-not-found exception?
         raise Exception("Torrent not found:\ninfo_hash: {}\npassedhash: {}".format(hash.encode('utf-8')
                                                                                     ,t.info_hash))
     
@@ -58,7 +62,7 @@ class Client(models.Model):
     """
     
     name = models.CharField(max_length=20, unique=True)
-    ip = models.GenericIPAddressField()
+    ip = models.GenericIPAddressField(unique=True)
     port = models.IntegerField()
     torrent = models.ForeignKey(Torrent)
 
@@ -88,7 +92,7 @@ class Client(models.Model):
     def __unicode__(self):
         return self.name
 
-    def setState(self, state):
+    def update(self, state):
         options = {"seeding":self.__startSeeding__,
                    "started":self.__initialize__,
                    "inactive":self.__quit__
