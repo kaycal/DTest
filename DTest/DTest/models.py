@@ -1,4 +1,5 @@
-from django.db import models
+from django.db import models, IntegrityError
+import hashlib
 
 ####################
 # Class - Torrent  #
@@ -14,35 +15,40 @@ class Torrent(models.Model):
     info_hash = models.CharField(max_length=20,unique=True)
     size = models.BigIntegerField()
     
-    def getPeer(name=None, addr=None):
+    def getPeer(self, name=None, addr=None, seeding=False):
         if name is not None: # Partial matching; TODO full searching
-            res = this.client_set.filter(client_name__startswith=name)
+            res = self.client_set.filter(name__startswith=name)
         elif addr is not None:
-            res = this.client_set.filter(client_ip__exact=addr)
+            res = self.client_set.filter(ip__exact=addr)
+        elif seeding is True:
+            res = self.client_set.filter(state__exact='seeding')
         else:
-            return this.client_set.all()
+            res = self.client_set.all()
         print res
         return res
 
-    @classmethod
-    def create(info_hash=None,name=None):
-        # Attempt to create and save torrent
-        # If pass, return torrent
-        # If fail, raise exception
-        pass
+    @staticmethod
+    def create(name,info_hash,size):
+        try:
+            t = Torrent(name=name,info_hash=info_hash,size=size)
+            t.save()
+            return t
+        except IntegrityError:
+            raise Exception("Torrent already exists.")
+        except Error as e:
+            raise Exception(e)
     
-    @classmethod
-    def getTorrent(info_hash=None,name=None):
+    @staticmethod
+    def getTorrent(info_hash):
         for t in Torrent.objects.all():
-            if info_hash.lower() == t.info_hash.lower() or name.lower() == t.name.lower():
+            if info_hash.lower() == t.info_hash.lower():
                 return {"name":t.name,
                         "info_hash":t.info_hash,
                         "size":t.size,
                         "torrent":t
                        }
         # Throw a torrent-not-found exception?
-        raise Exception("Torrent not found:\ninfo_hash: {}\npassedhash: {}".format(hash.encode('utf-8')
-                                                                                    ,t.info_hash))
+        raise Exception("Torrent not found")
     
     def __unicode__(self):
         return self.name
@@ -61,33 +67,37 @@ class Client(models.Model):
        >>> if c.is_valid() c.save()
     """
     
-    name = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=20)
     ip = models.GenericIPAddressField(unique=True)
     port = models.IntegerField()
     torrent = models.ForeignKey(Torrent)
 
     state_choices = (
-        ('seeding','Seeding'),
-        ('leeching','Leeching'),
-        ('started','Initializing'),
-        ('inactive','Inactive'),
+        ('seeding','seeding'),
+        ('leeching','leeching'),
+        ('started','initializing'),
+        ('inactive','inactive'),
+        ('interval','interval'),
     )
 
 
 
     state = models.CharField(max_length=12,choices=state_choices, default='inactive')
     
-    @classmethod
-    def create(n = None, i = None, p = None, ih = None):
+    @staticmethod
+    def get(n = None, i = None, p = None, ih = None, evt = None):
         try:
             t = Torrent.getTorrent(info_hash=ih)["torrent"]
-            c = Client(name=n,ip=i,port=p, torrent=t)
-            c.save()
+            c,created = Client.objects.get_or_create(name=n[0].encode("utf-8"),ip=i[0].encode("utf-8"),
+                                                     port=int(p[0]), torrent=t)
+            c.update(evt[0])
+            c.save() #<-- This will probs return an error on __quit__. Let's find out.
+            return c
         except NameError:
             print "One or more variables may not have been initialized."
         except Exception as e:
-            print e
-        return c
+            print e, "Client.get() exception"
+        raise Exception("Wat")
 
     def __unicode__(self):
         return self.name
@@ -95,17 +105,21 @@ class Client(models.Model):
     def update(self, state):
         options = {"seeding":self.__startSeeding__,
                    "started":self.__initialize__,
-                   "inactive":self.__quit__
+                   "inactive":self.__quit__,
+                   "":self.__interval__
                   }
-        self.state = options[state.lower()]()
+        self.state = options[state]()
         
 
     def __startSeeding__(self): # Little more than a "flag" for identifying prime peers
-        return "Seeding"
+        return "seeding"
 
-    def __initialize__(self): # Add / create client
-        return "Starting"
+    def __initialize__(self): # Client already created upwards a bit
+        return "starting"
 
     def __quit__(self): # Attempt to remove the client entity
         self.delete()
-        return "Inactive"
+        return
+
+    def __interval__(self):
+        return "interval"
