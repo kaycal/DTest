@@ -26,7 +26,11 @@ class Torrent(models.Model):
             res = self.client_set.all()
         print res
         return res
+        
+    def __unicode__(self):
+        return self.name
 
+    # Class methods
     @staticmethod
     def create(name,info_hash,size):
         try:
@@ -49,15 +53,14 @@ class Torrent(models.Model):
                        }
         # Throw a torrent-not-found exception?
         raise Exception("Torrent not found")
-    
-    def __unicode__(self):
-        return self.name
 
 
 ##################
 # Class - Client #
 ##################
 
+# TODO
+# Hella needs cleaning up
 class Client(models.Model):
     """Instances represent a peer entity in the torrent swarm.
        These should be very malleable; for the time being, until
