@@ -126,3 +126,6 @@ class Client(models.Model):
 
     def __interval__(self):
         return "interval"
+        
+class Utilities:
+    # Stick torutils in here.
